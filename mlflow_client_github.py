@@ -1,144 +1,147 @@
-"""
-MLflow Remote Client for GitHub Repository
-------------------------------------------
-Este script permite entrenar, registrar métricas/artefactos y ejecutar inferencias
-trazadas (@mlflow.trace) desde cualquier entorno local o pipeline de GitHub,
-conectándose directamente al servidor servidor de MLflow alojado en Google Colab.
-"""
-
-import argparse
-import os
-import tempfile
-import matplotlib.pyplot as plt
-import numpy as np
+import streamlit as st
 import pandas as pd
-import seaborn as sns
-from sklearn.datasets import load_wine
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
-from sklearn.model_selection import train_test_split
-
 import mlflow
 import mlflow.sklearn
-from mlflow.models import infer_signature
 
+# ----------------------------------------------------------------------
+# 1. CONFIGURACIÓN DE LA PÁGINA Y ENCABEZADO
+# ----------------------------------------------------------------------
+st.set_page_config(
+    page_title="Inferencia & MLflow Tracing (Streamlit Cloud)",
+    page_icon="🍷",
+    layout="wide"
+)
 
-def get_tracking_uri():
+st.title("🍷 Clasificador de Vinos - Streamlit Cloud & MLflow Remote")
+st.markdown(
     """
-    Obtiene la URI de MLflow en el siguiente orden de prioridad:
-    1. Variable de entorno MLFLOW_TRACKING_URI
-    2. Argumento de línea de comandos --tracking-uri
-    3. Input interactivo por consola
+    Esta aplicación está desplegada en **Streamlit Cloud** y se conecta de forma remota al servidor de **MLflow** 
+    alojado en Google Colab para realizar inferencias trazadas (**MLflow Trace**) y consultar el modelo.
     """
-    uri = os.getenv("MLFLOW_TRACKING_URI")
-    if uri:
-        print(f"🌐 MLflow Tracking URI cargado desde variable de entorno: {uri}")
-        return uri
+)
 
-    parser = argparse.ArgumentParser(description="Cliente MLOps MLflow conectado a Google Colab")
-    parser.add_argument("--tracking-uri", type=str, help="URL pública de Cloudflare (ej: https://xxx.trycloudflare.com)")
-    args, _ = parser.parse_known_args()
+# ----------------------------------------------------------------------
+# 2. BARRA LATERAL: CONFIGURACIÓN DE CONEXIÓN Y MODELO
+# ----------------------------------------------------------------------
+st.sidebar.header("⚙️ Configuración de Conexión MLflow")
 
-    if args.tracking_uri:
-        print(f"🌐 MLflow Tracking URI cargado desde argumento CLI: {args.tracking_uri}")
-        return args.tracking_uri
+# Cargar la URL por defecto desde st.secrets si existe
+default_uri = ""
+if "MLFLOW_TRACKING_URI" in st.secrets:
+    default_uri = st.secrets["MLFLOW_TRACKING_URI"]
 
-    print("=" * 65)
-    print("📡 CONEXIÓN A SERVIDOR MLFLOW REMOTO (GOOGLE COLAB)")
-    print("=" * 65)
-    uri = input("Ingrese la URL pública de Cloudflare (ej: https://xxx.trycloudflare.com): ").strip()
-    return uri
+tracking_uri = st.sidebar.text_input(
+    "URL del Túnel Cloudflare (Colab):",
+    value=default_uri,
+    placeholder="https://xxxx.trycloudflare.com",
+    help="Ingresa la URL pública generada por Cloudflare en la consola de Google Colab."
+)
 
+model_uri_input = st.sidebar.text_input(
+    "URI del Modelo en MLflow:",
+    value="models:/m-e34eaf18ea5d490f9789ac49f36ced1a",
+    help="Puedes ingresar una URI de artefacto físico (ej. models:/m-xxxx), una del Model Registry (ej. models:/NombreModelo/1) o una por Run ID (ej. runs:/<run_id>/model)."
+)
 
-def main():
-    # 1. Configurar Tracking URI remoto
-    tracking_uri = get_tracking_uri()
-    if not tracking_uri:
-        raise ValueError("❌ Debe proporcionar una URL válida de MLflow Tracking URI.")
+# ----------------------------------------------------------------------
+# 3. VALIDACIÓN DE CONEXIÓN Y CARGA DEL MODELO
+# ----------------------------------------------------------------------
+if not tracking_uri:
+    st.warning("⚠️ Por favor, ingresa la URL pública de Cloudflare en la barra lateral para conectar con MLflow.")
+    st.stop()
 
-    # Asegurar protocolo https:// si falta
-    if not tracking_uri.startswith("http://") and not tracking_uri.startswith("https://"):
-        tracking_uri = f"https://{tracking_uri}"
+# Garantizar el protocolo https://
+if not tracking_uri.startswith("http://") and not tracking_uri.startswith("https://"):
+    tracking_uri = f"https://{tracking_uri}"
 
-    mlflow.set_tracking_uri(tracking_uri)
-    
-    experiment_name = "Clasificacion_Vinos_GitHub_Remote"
-    mlflow.set_experiment(experiment_name)
-    print(f"✅ Conectado exitosamente. Experimento activo: '{experiment_name}'")
+# Configurar el servidor de seguimiento de MLflow
+mlflow.set_tracking_uri(tracking_uri)
+try:
+    mlflow.set_experiment("Clasificacion_Vinos_Streamlit_Cloud")
+    st.sidebar.success("✅ Conectado a MLflow Server")
+except Exception as e:
+    st.sidebar.error(f"❌ Error al conectar con MLflow: {e}")
 
-    # 2. Carga y preparación de datos
-    wine = load_wine(as_frame=True)
-    X, y = wine.data, wine.target
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
-    )
+@st.cache_resource(show_spinner="Cargando modelo desde MLflow...")
+def load_remote_model(server_uri, full_model_uri):
+    """Carga el modelo scikit-learn guardado en MLflow usando su URI física o lógica."""
+    mlflow.set_tracking_uri(server_uri)
+    return mlflow.sklearn.load_model(full_model_uri)
 
-    # 3. Definir función de inferencia decorada con @mlflow.trace
-    @mlflow.trace(name="Inferencia_Remota_GitHub_Span")
-    def run_traced_inference(model_obj, input_df):
-        """Ejecuta la predicción y envía el span de trazo automáticamente a MLflow Server."""
-        return model_obj.predict(input_df)
+try:
+    model = load_remote_model(tracking_uri, model_uri_input)
+    st.success(f"✅ Modelo cargado exitosamente desde `{model_uri_input}`")
+except Exception as e:
+    st.error(f"❌ No se pudo cargar el modelo desde la URI indicada: {e}")
+    st.info("💡 **Consejo de solución:**\n- Revisa que el servidor de MLflow en Colab siga activo y escuchando.\n- Verifica que la URL del túnel Cloudflare sea la última generada.\n- Asegúrate de que la URI del modelo corresponda exactamente a la que existe en Colab.")
+    st.stop()
 
-    # 4. Iniciar ejecución en MLflow (Run)
-    print("
-🚀 Iniciando entrenamiento e interacción remota con MLflow Server...")
-    with mlflow.start_run(run_name="Ejecucion_Cliente_GitHub") as run:
-        params = {"n_estimators": 75, "max_depth": 5, "random_state": 42}
-        clf = RandomForestClassifier(**params)
-        clf.fit(X_train, y_train)
+# ----------------------------------------------------------------------
+# 4. FUNCIÓN CON TRAZABILIDAD MLFLOW (@mlflow.trace)
+# ----------------------------------------------------------------------
+@mlflow.trace(name="Streamlit_Cloud_Inference_Span")
+def predict_with_trace(input_df):
+    """Ejecuta la predicción y envía el span de trazo automáticamente a MLflow Server."""
+    return model.predict(input_df)
 
-        # Evaluación
-        y_pred = clf.predict(X_test)
-        acc = accuracy_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred, average="weighted")
+# ----------------------------------------------------------------------
+# 5. FORMULARIO DE ENTRADA DE CARACTERÍSTICAS
+# ----------------------------------------------------------------------
+st.subheader("📋 Parámetros Químicos del Vino")
 
-        # Registrar parámetros y métricas remotamente
-        mlflow.log_params(params)
-        mlflow.log_metrics({"accuracy": acc, "f1_score": f1})
-        mlflow.set_tag("origen", "GitHub_Repository_Client")
-        mlflow.set_tag("entorno", "Local_Dev / CI_CD")
+col1, col2, col3 = st.columns(3)
 
-        # Crear y registrar matriz de confusión como artefacto
-        fig, ax = plt.subplots(figsize=(6, 5))
-        cm = confusion_matrix(y_test, y_pred)
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Purples',
-                    xticklabels=wine.target_names, yticklabels=wine.target_names, ax=ax)
-        ax.set_title("Matriz de Confusión - Cliente GitHub")
-        ax.set_xlabel("Predicción")
-        ax.set_ylabel("Valor Real")
+with col1:
+    alcohol = st.number_input("Alcohol", value=13.0, step=0.1)
+    malic_acid = st.number_input("Malic Acid", value=2.3, step=0.1)
+    ash = st.number_input("Ash", value=2.36, step=0.01)
+    alcalinity_of_ash = st.number_input("Alcalinity of Ash", value=18.6, step=0.5)
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            plot_path = os.path.join(tmp_dir, "confusion_matrix.png")
-            plt.savefig(plot_path, bbox_inches='tight')
-            plt.close(fig)
-            mlflow.log_artifact(plot_path, artifact_path="graficos")
+with col2:
+    magnesium = st.number_input("Magnesium", value=101.0, step=1.0)
+    total_phenols = st.number_input("Total Phenols", value=2.8, step=0.1)
+    flavanoids = st.number_input("Flavanoids", value=2.98, step=0.1)
+    nonflavanoid_phenols = st.number_input("Nonflavanoid Phenols", value=0.29, step=0.01)
 
-        # Inferencia de firma y registro del modelo
-        signature = infer_signature(X_test, y_pred)
-        mlflow.sklearn.log_model(
-            sk_model=clf,
-            artifact_path="model",
-            signature=signature,
-            input_example=X_test.iloc[:2]
-        )
+with col3:
+    proanthocyanins = st.number_input("Proanthocyanins", value=1.8, step=0.1)
+    color_intensity = st.number_input("Color Intensity", value=5.1, step=0.1)
+    hue = st.number_input("Hue", value=1.04, step=0.01)
+    od280_od315 = st.number_input("OD280/OD315 of diluted wines", value=3.1, step=0.1)
+    proline = st.number_input("Proline", value=1065.0, step=10.0)
 
-        print(f"✅ Run registrado en Colab con exito.")
-        print(f"🆔 Run ID: {run.info.run_id}")
-        print(f"📊 Accuracy: {acc:.4f} | F1-Score: {f1:.4f}")
+# Construir el DataFrame de entrada con los nombres de características requeridos
+input_data = pd.DataFrame([{
+    'alcohol': alcohol,
+    'malic_acid': malic_acid,
+    'ash': ash,
+    'alcalinity_of_ash': alcalinity_of_ash,
+    'magnesium': magnesium,
+    'total_phenols': total_phenols,
+    'flavanoids': flavanoids,
+    'nonflavanoid_phenols': nonflavanoid_phenols,
+    'proanthocyanins': proanthocyanins,
+    'color_intensity': color_intensity,
+    'hue': hue,
+    'od280/od315_of_diluted_wines': od280_od315,
+    'proline': proline
+}])
 
-        # 5. Probar Inferencia y MLflow Trace
-        print("
-🔍 Ejecutando inferencia en tiempo real con trazabilidad MLflow Trace...")
-        sample_data = X_test.iloc[:3]
-        predictions = run_traced_inference(clf, sample_data)
-        
-        print("🎯 Predicciones obtenidas:")
-        for idx, pred in enumerate(predictions):
-            print(f"   - Muestra {idx + 1}: Clase {pred} ({wine.target_names[pred]})")
+# ----------------------------------------------------------------------
+# 6. EJECUCIÓN DE LA INFERENCIA Y MOSTRAR RESULTADOS
+# ----------------------------------------------------------------------
+if st.button("🚀 Ejecutar Predicción con MLflow Trace"):
+    with st.spinner("Enviando petición e inferencia trazada a MLflow..."):
+        try:
+            preds = predict_with_trace(input_data)
+            
+            st.markdown("---")
+            st.subheader("🎯 Resultado de la Predicción")
+            st.success(f"**Clase Predicha:** Tipo de Vino #{preds[0]}")
+            
+            with st.expander("Ver vector de características de entrada"):
+                st.dataframe(input_data)
 
-        print("
-✨ Trazo enviado exitosamente al servidor. Revisa la pestaña 'Traces' en la UI de MLflow.")
-
-
-if __name__ == "__main__":
-    main()
+            st.info("✨ **Trazabilidad Activa:** La traza de ejecución (*span*) ha sido registrada remotamente en el servidor de MLflow en Google Colab. Revisa la pestaña **Traces** en la interfaz de MLflow UI.")
+        except Exception as e:
+            st.error(f"❌ Error durante la inferencia o el envío del trazo: {e}")
