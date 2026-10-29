@@ -33,7 +33,7 @@ if "MLFLOW_TRACKING_URI" in st.secrets:
 tracking_uri = st.sidebar.text_input(
     "URL del Túnel Cloudflare (Colab):",
     value=default_uri,
-    placeholder="https://xxxx.trycloudflare.com",
+    placeholder="https://wood-precisely-helicopter-opposite.trycloudflare.com",
     help="Ingresa la URL pública generada por Cloudflare en la consola de Google Colab."
 )
 
