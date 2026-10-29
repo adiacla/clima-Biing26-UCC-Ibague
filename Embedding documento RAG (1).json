@@ -1,0 +1,392 @@
+{
+  "name": "Embedding documento RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## ⚙️ CONFIGURACIÓN REQUERIDA (versión nativa LangChain)\n\n1. Esta versión usa una TABLA NUEVA: `ccd.documentos_vectoriales`, con el esquema que espera el nodo nativo de n8n (id uuid, content, metadata jsonb, embedding). No toca tu tabla anterior `ccd.conocimiento_vectorial`.\n2. Ejecuta primero 'Preparar Tabla Vectorial' una sola vez.\n3. Conecta credenciales: Google Drive, Postgres (Supabase) y OpenAI (para el nodo Embeddings OpenAI).\n4. En 'Default Data Loader' se guarda el nombre del archivo como metadata 'fuente' — así 'Borrar Fragmentos Antiguos' puede borrar los chunks viejos de ese archivo antes de re-insertar.\n5. El split de texto (chunking) y las llamadas a embeddings ahora las maneja LangChain automáticamente: no hace falta el código manual de fragmentación ni el loop de lotes.\n6. Si con muchos documentos ves 429 de OpenAI, el límite de OpenAI es mucho más alto que el de NVIDIA free-tier, pero si pasa, dime y agregamos un nodo Wait antes de 'Descargar Archivo Markdown'.",
+        "height": 380,
+        "width": 480,
+        "color": 5
+      },
+      "id": "0e1cacfa-02d3-46c5-96e8-0d5b104a9d4f",
+      "name": "Notas de Configuración",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "7d0f6075-2312-4605-8cab-8abef0277745",
+      "name": "Ejecutar Manualmente",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "id": "34eb2251-7390-4f96-8977-c6130f18f89e",
+      "name": "Programado (Semanal Lunes 6am)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE EXTENSION IF NOT EXISTS vector SCHEMA public;\nCREATE EXTENSION IF NOT EXISTS pgcrypto;\n\nCREATE TABLE IF NOT EXISTS ccd.documentos_vectoriales (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  content text,\n  metadata jsonb,\n  embedding public.vector(1536)\n);\n\nCREATE INDEX IF NOT EXISTS idx_documentos_vectoriales_embedding_hnsw\n  ON ccd.documentos_vectoriales USING hnsw (embedding vector_cosine_ops);\n\nCREATE INDEX IF NOT EXISTS idx_documentos_vectoriales_metadata\n  ON ccd.documentos_vectoriales USING gin (metadata);",
+        "options": {}
+      },
+      "id": "4a6f8b6a-337e-4b3a-9378-0840ae861c92",
+      "name": "Preparar Tabla Vectorial",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        224,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "7MWqwUKpZW1LTyoV",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1UBwAjuB0Yp1oiHXNHQ01D6gTcHGtDOBT",
+            "mode": "list",
+            "cachedResultName": "ccDigital",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1UBwAjuB0Yp1oiHXNHQ01D6gTcHGtDOBT"
+          }
+        },
+        "options": {}
+      },
+      "id": "7f560e83-b458-4b0c-ada3-ff5fab355e86",
+      "name": "Get files from folder",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        432,
+        480
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "c3fqkivlHQkFWUg1",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cond-mimetype-soportado",
+              "leftValue": "={{ $json.name }}",
+              "rightValue": ".*\\.md$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "358bf129-3ec9-425c-9a6b-152d8f75b638",
+      "name": "Filtrar Solo Markdown (.md)",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        656,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "id": "d6939c08-d14c-4686-9948-215cc5b75677",
+      "name": "Descargar Archivo Markdown",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        880,
+        480
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "c3fqkivlHQkFWUg1",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM ccd.documentos_vectoriales WHERE metadata->>'fuente' = '{{ $json.name.replace(/'/g, \"''\") }}';",
+        "options": {}
+      },
+      "id": "02025169-b5e2-462b-add1-60b4c9d5a73c",
+      "name": "Borrar Fragmentos Antiguos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1136,
+        272
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "7MWqwUKpZW1LTyoV",
+          "name": "Postgres account"
+        }
+      },
+      "notes": "Borra los chunks previos de ESTE archivo (por nombre) antes de volver a insertarlo, para no duplicar si el flujo corre de nuevo."
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "ccd.documentos_vectoriales",
+        "options": {
+          "columnNames": {
+            "values": {
+              "contentColumnName": "content"
+            }
+          }
+        }
+      },
+      "id": "990c38d0-6c09-4c8c-bf7f-59feafa28495",
+      "name": "Postgres PGVector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        480
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "7MWqwUKpZW1LTyoV",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "fuente",
+                "value": "={{ $('Descargar Archivo Markdown').item.json.name }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "90fb6b4f-6922-498b-bafb-e9f2f2c5de54",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 150,
+        "options": {}
+      },
+      "id": "edadef5a-d41d-46fd-bd8c-25e9a7259172",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1360,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c5b120eb-de93-4b25-a151-20e9d8313556",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        752
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      },
+      "notes": "Al importar, abre este nodo y elige el modelo en el dropdown (recomendado: text-embedding-3-small)."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ejecutar Manualmente": {
+      "main": [
+        [
+          {
+            "node": "Preparar Tabla Vectorial",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Programado (Semanal Lunes 6am)": {
+      "main": [
+        [
+          {
+            "node": "Preparar Tabla Vectorial",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Tabla Vectorial": {
+      "main": [
+        [
+          {
+            "node": "Get files from folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get files from folder": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Solo Markdown (.md)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Solo Markdown (.md)": {
+      "main": [
+        [
+          {
+            "node": "Descargar Archivo Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar Archivo Markdown": {
+      "main": [
+        [
+          {
+            "node": "Borrar Fragmentos Antiguos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b05112ef-a95e-4707-843a-7cbd52676d5d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ee9a94a04d98f891d3f9ac21a9a39e2419fb3c5f9e83001464cb663b4d7867d8"
+  },
+  "nodeGroups": [],
+  "id": "UyWiojRC7D9nOeO1",
+  "tags": []
+}
