@@ -1,0 +1,317 @@
+{
+  "name": "Agente del Clima",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "¡Pruébalo ahora!\nLanza tu primer agente de IA: un chatbot que utiliza herramientas para obtener información en tiempo real, enviar correos electrónicos y automatizar tareas.\n\n#Para empezar:\nConecta Gemini (mira la nota adhesiva roja de abajo)\n\nHaz clic en el botón 🗨 Abrir chat e intenta preguntar:\n\n“¿Cómo está el clima en París?”\n\n“Búscame las últimas noticias de tecnología.”\n\n“Dame ideas para agentes de IA en n8n.”\n\n# ¿Preguntas o comentarios?\nSi tienes comentarios, necesitas asesoría, quieres flujos de trabajo personalizados o tienes cualquier duda, utiliza mi formulario de contacto unificado impulsado por IA.\n\n➡️ Ponte en contacto aquí\n\n¡Feliz automatización! —ALFREDO DIAZ",
+        "height": 460,
+        "width": 392
+      },
+      "id": "cdbef004-8d1e-4a00-8207-6fdf67873284",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Introduction Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "creator": "Lucas Peyrin",
+      "position": [
+        0,
+        144
+      ],
+      "typeVersion": 1,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "content": "💡 ¡Más adelante, activa este flujo de trabajo y comparte la URL pública del chat para que otros puedan hablar con tu Agente de IA!",
+        "height": 252,
+        "width": 300,
+        "color": 7
+      },
+      "id": "d8dd09d3-9ebc-45ac-9967-dd4b33c25ae7",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Sticky Note12",
+      "type": "n8n-nodes-base.stickyNote",
+      "creator": "Lucas Peyrin",
+      "position": [
+        480,
+        240
+      ],
+      "typeVersion": 1,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "content": "Tu agente de IA puede:\n\nRecibir mensajes del chat.\n\nSeleccionar las herramientas adecuadas (por ejemplo: clima, noticias, correo electrónico).\n\nResponder con respuestas útiles y en tiempo real.\n\n## Abre el nodo del agente de IA y edita el Mensaje del Sistema (System Message) para ajustar el pensamiento, comportamiento y respuestas de tu agente.\n\n\n\n\n\n\n\n\n",
+        "height": 348,
+        "width": 396,
+        "color": 7
+      },
+      "id": "3d60d417-93c2-420c-95f2-6637d10c669b",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Sticky Note13",
+      "type": "n8n-nodes-base.stickyNote",
+      "creator": "Lucas Peyrin",
+      "position": [
+        848,
+        0
+      ],
+      "typeVersion": 1,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\nThis node helps your agent remember the last few messages to stay on topic.",
+        "height": 260,
+        "width": 628,
+        "color": 7
+      },
+      "id": "365dcb0b-ec98-428a-aae1-f3462781bdf1",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Sticky Note15",
+      "type": "n8n-nodes-base.stickyNote",
+      "creator": "Lucas Peyrin",
+      "position": [
+        1488,
+        656
+      ],
+      "typeVersion": 1,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Gets the latest blog posts about any rss feed.",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', `Usa uno de:\n\nhttps://feeds.bbci.co.uk/news/world/rss.xml (BBC World – titulares globales)\n\nhttps://www.aljazeera.com/xml/rss/all.xml (Al Jazeera en Inglés – cobertura global en profundidad)\n\nhttp://rss.cnn.com/rss/edition_world.rss (CNN World – noticias de última hora de todo el mundo)\n\nhttps://techcrunch.com/feed/ (TechCrunch – noticias globales de tecnología y startups)\n\nhttp://news.ycombinator.com/rss (Hacker News – titulares de la comunidad tecnológica)\n\nhttps://n8n.io/blog/rss (Blog de n8n – actualizaciones y tutoriales)\n\nhttps://www.bonappetit.com/feed/recipes-rss-feed/rss (Bon Appétit – lista de recetas recientes)\n\nhttps://www.endsreport.com/rss/news-and-analysis (ENDS Report – noticias de legislación y política ambiental)\n\nhttps://medlineplus.gov/groupfeeds/new.xml (MedlinePlus – temas de salud y actualizaciones de bienestar)`, 'string') }}",
+        "options": {}
+      },
+      "id": "20654279-ae48-4e30-901d-af1adb1a60d2",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Get News",
+      "type": "n8n-nodes-base.rssFeedReadTool",
+      "creator": "Lucas Peyrin",
+      "position": [
+        1376,
+        720
+      ],
+      "typeVersion": 1.2,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Obtén el pronóstico del clima en cualquier lugar y momento. Puedes realizar solicitudes asumiendo la mayor parte de la información; lo único que necesitas es la ubicación (usa el nombre de la ciudad para inferir la latitud y longitud automáticamente) y el período de tiempo (asume \"hoy\" si no se especifica).",
+        "url": "https://api.open-meteo.com/v1/forecast",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "latitude",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', `Latitude of the location, e.g. 45.75 for Lyon. Do not ask the user just infer it automatically.`, 'string') }}"
+            },
+            {
+              "name": "longitude",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', `Longitude of the location, e.g. 4.85 for Lyon. Do not ask the user just infer it automatically.`, 'string') }}"
+            },
+            {
+              "name": "current",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Value', `Comma-separated list of current weather variables (no whitespace).\n\nExample: temperature_2m,windspeed_10m,rain.\n\nOptions: temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weathercode,cloudcover_total,pressure_msl,surface_pressure,windspeed_10m,winddirection_10m,windgusts_10m.`, 'string') }}"
+            },
+            {
+              "name": "hourly",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters3_Value', `Comma-separated list of hourly weather variables (no whitespace). Hourly is only useful to get one day's information. For weakly overview please use daily.\n\nExample: temperature_2m,precipitation.\n\nOptions: temperature_2m,relative_humidity_2m,dewpoint_2m,apparent_temperature,precipitation,rain,showers,snowfall,snow_depth,pressure_msl,surface_pressure,cloudcover_total,cloudcover_low,cloudcover_mid,cloudcover_high,windspeed_10m,winddirection_10m,windgusts_10m,visibility,is_day,sunshine_duration,soil_temperature,soil_moisture,PM10,PM2_5,carbon_monoxide,ozone,us_aqi,UV_index.`, 'string') }}"
+            },
+            {
+              "name": "daily",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters4_Value', `Comma-separated list of daily weather variables (no whitespace).\n\nExample: temperature_2m_max,precipitation_sum.\n\nOptions: weathercode,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,rain_sum,showers_sum,snowfall_sum,precipitation_hours,sunrise,sunset,daylight_duration,sunshine_duration,pressure_msl_max,pressure_msl_min,surface_pressure_max,surface_pressure_min,windgusts_10m_max,windspeed_10m_max,winddirection_10m_dominant,shortwave_radiation_sum.`, 'string') }}"
+            },
+            {
+              "name": "start_date",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters5_Value', `Start date in YYYY-MM-DD format. Example: 2025-07-15`, 'string') }}"
+            },
+            {
+              "name": "end_date",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters6_Value', `End date in YYYY-MM-DD format. Must be after start_date. Example: 2025-07-18`, 'string') }}"
+            },
+            {
+              "name": "temperature_unit",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters7_Value', `Unit for temperature. Options: celsius (default), fahrenheit.`, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1f222349-2dd4-486b-88e9-879ab365fa77",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Get Weather",
+      "type": "n8n-nodes-base.httpRequestTool",
+      "creator": "Lucas Peyrin",
+      "position": [
+        1168,
+        720
+      ],
+      "notesInFlow": true,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "id": "9523a805-e3f2-4c12-82a1-3a0d660089f9",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Example Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "creator": "Lucas Peyrin",
+      "position": [
+        704,
+        416
+      ],
+      "webhookId": "e5616171-e3b5-4c39-81d4-67409f9fa60a",
+      "typeVersion": 1.1,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 30
+      },
+      "id": "2334f35d-6ffa-4bf7-9f05-529efd69fad6",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Conversation Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "creator": "Lucas Peyrin",
+      "position": [
+        976,
+        704
+      ],
+      "typeVersion": 1.3,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\nAquí tienes la versión modificada y traducida al español para la nota adhesiva de las credenciales, adaptada para obtener la API key desde Nvidia Build:\n\nEn Nvidia Build regístrate o inicia sesión, genera tu API Key y cópiala.\n\nAbre el nodo de conexión de Nvidia (por ejemplo, Open AI chat o el Nvidia Chat Model:\n\nSelecciona Credenciales ➔ Crear Nueva (Select Credential ➔ Create New)\n\nPega tu clave en API Key y haz clic en Guardar (Save)",
+        "height": 540,
+        "width": 470,
+        "color": 3
+      },
+      "id": "2e4fb6ed-38c3-4db5-9a0e-57cf8559d764",
+      "cid": "Ikx1Y2FzIFBleXJpbiI",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "creator": "Lucas Peyrin",
+      "position": [
+        448,
+        608
+      ],
+      "typeVersion": 1,
+      "notes": "© 2025 Lucas Peyrin"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        784,
+        688
+      ],
+      "id": "aa27c145-6041-42b5-935c-6ca714035886",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "rwVEcatMWjsGa2Wy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "<role>\nEres el Agente de IA de Demostración de n8n, un asistente amigable y servicial diseñado para mostrar el poder de los agentes de IA dentro de la plataforma de automatización de n8n. Tu personalidad es motivadora, ligeramente didáctica y entusiasta con la automatización. Tu función principal es demostrar tus capacidades utilizando tus herramientas disponibles para responder a las preguntas de los usuarios y cumplir con sus solicitudes. Eres conversacional.\n</role>\n\n<instructions>\n<goal>\nTu objetivo principal es actuar como una demostración en vivo de un Agente de IA creado con n8n. Interactuarás con los usuarios, responderás a sus preguntas utilizando inteligentemente tus herramientas disponibles y explicarás los conceptos detrás de los agentes de IA para ayudarlos a comprender su potencial.\n</goal>\n\n<context>\n### Cómo funciono\nSoy un modelo de IA que opera dentro de un flujo de trabajo simple de n8n. Este flujo me proporciona dos cosas clave:\n1.  **Un conjunto de herramientas:** Estas son funciones que puedo llamar para obtener información o realizar acciones.\n2.  **Memoria simple:** Puedo recordar el pasado inmediato de nuestra conversación actual para comprender el contexto.\n\n### Mi propósito\nMi propósito principal es ser una vitrina de demostración. Muestro cómo se puede dar una interfaz de chat a varias funciones (mis herramientas) sin necesidad de interfaces de usuario complejas. Esta es una excelente manera de hacer que las automatizaciones potentes sean accesibles para cualquier persona a través de una simple conversación.\n\n### Instrucciones de mis herramientas\nDebes elegir una de tus herramientas disponibles si la solicitud del usuario coincide con su capacidad. No puedes realizar estas acciones por ti mismo; debes llamar a la herramienta.\n\n### Acerca de los Agentes de IA en n8n\n- **Confiabilidad:** Aunque puedo usar una herramienta a la vez de manera efectiva, los agentes más avanzados pueden realizar tareas de múltiples pasos. Sin embargo, para procesos complejos y de misión crítica, a menudo es más confiable construir flujos de trabajo estructurados paso a paso en n8n en lugar de depender únicamente del razonamiento de un agente. Los agentes son fantásticos para interacciones con el usuario, pero los flujos de trabajo estructurados son los reyes para la confiabilidad del backend.\n- **Mejores prácticas:** Una buena práctica es mantener el conjunto de herramientas del agente enfocado, típicamente por debajo de 10-15 herramientas, para garantizar la confiabilidad y evitar confusiones.\n\n### Fecha y hora actual\n{{ $now }}\n</context>\n\n<output_format>\n- Responde con un tono amigable, conversacional y servicial.\n- Cuando la solicitud de un usuario requiera una herramienta, primero selecciona la herramienta adecuada. Luego, presenta el resultado de la ejecución de la herramienta al usuario de una manera clara y comprensible.\n- Sé proactivo. Si el usuario no está seguro de qué hacer, sugiérele algunos ejemplos de lo que puede preguntarte en función de tus herramientas disponibles (por ejemplo, hablar sobre tus herramientas y lo que sabes sobre ti mismo).\n\"Cuando uses la herramienta Get Weather para consultar el clima actual o de los próximos días, no rellenes los parámetros de start_date ni end_date a menos que sea estrictamente necesario.\n</output_format>\n</instructions>"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1120,
+        416
+      ],
+      "id": "12e3d8d0-cc60-4918-abe2-f97602e96ba5",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get News": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weather": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Example Chat": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "b3144264-faa3-425b-9de7-c88b925ea3e4",
+  "meta": {
+    "instanceId": "ee9a94a04d98f891d3f9ac21a9a39e2419fb3c5f9e83001464cb663b4d7867d8"
+  },
+  "nodeGroups": [],
+  "id": "tgLMhDkPM8DnHJgy",
+  "tags": []
+}
